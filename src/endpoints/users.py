@@ -1,5 +1,9 @@
 from flask import Blueprint, request
 from http import HTTPStatus
+import sqlalchemy.exc
+import werkzeug
+from src.database import db
+from src.models.user import User, user_schema, users_schema
 
 users = Blueprint("users",__name__,url_prefix="/api/v1/users")
 
@@ -14,54 +18,69 @@ user_data = [
 
 @users.get("/")
 def read_all():
-    return {"data": user_data}, HTTPStatus.OK
+    users = User.query.order_by(User.name_user).all() 
+    return {"data": users_schema.dump(users)}, HTTPStatus.OK
 
 @users.get("/<int:id>")
 def read_one(id):
-    for user in user_data:
-        if user['id_user'] == id:
-            return {"data": user}, HTTPStatus.OK
-
-    return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    user = User.query.filter_by(id=id).first()
+    if(not user):
+        return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    return {"data": user_schema.dump(user)}, HTTPStatus.OK
 
 @users.post("/")
 def create():
-    post_data = request.get_json()
+    post_data = None
+    try:
+        post_data = request.get_json()
+    except werkzeug.exceptions.BadRequest as e:
+        return {"error": "Post body JSON data not found","message": str(e)}, HTTPStatus.BAD_REQUEST
+    # User.id is auto increment! 
+    user = User(name_user = request.get_json().get("name_user", None),
+        email = request.get_json().get("email", None),
+        password_user = request.get_json().get("name_user", None),
+        type_document = request.get_json().get("type_document", None),
+        balance = request.get_json().get("balance", None))
+    
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError as e:
+        return {"error": "Invalid resource values","message": str(e)}, HTTPStatus.BAD_REQUEST
 
-    user = {
-        "id_user": len(user_data) + 1,
-        "name_user": post_data.get('name_user', 'No Name User'),
-        "password_user": post_data.get('password_user', 'No password :c'),
-        "email": post_data.get('email', 'No email'),
-        "name": post_data.get('name', 'No Name'),
-        "balance": post_data.get('balance',0.0)
-    }
-
-    user_data.append(user)
-
-    return {"data": user}, HTTPStatus.CREATED
+    return {"data": user_schema.dump(user)}, HTTPStatus.CREATED
 
 @users.put('/<int:id>')
 @users.patch('/<int:id>')
 def update(id):
-    post_data = request.get_json()
-    for i in range(len(user_data)):
-        if user_data[i]['id_user'] == id:
-            user_data[i] = {
-                "id_user": id,
-                "name_user": post_data.get('name_user'),
-                "password_user": post_data.get('password_user'),
-                "email": post_data.get('email'),
-                "name": post_data.get('name'),
-                "balance": post_data.get('balance')
-            }
-            return {"data": user_data[i]}, HTTPStatus.OK
-    return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    post_data = None
+    try:
+        post_data = request.get_json()
+    except werkzeug.exceptions.BadRequest as e:
+        return {"error": "Put body JSON data not found","message": str(e)}, HTTPStatus.BAD_REQUEST
+    user = User.query.filter_by(id=id).first()
+    if(not user):
+        return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    
+    user.name_user = request.get_json().get('name_user', user.name_user)
+    user.email = request.get_json().get('email', user.email)
+    user.password_user = request.get_json().get('password_user', user.password_user)
+    user.balance = request.get_json().get('balance', user.balance)
+    
+    try:
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError as e:
+        return {"error": "Invalid resource values","message": str(e)}, HTTPStatus.BAD_REQUEST
+    return {"data": user_schema.dump(user)}, HTTPStatus.OK
 
 @users.delete("/<int:id>")
 def delete(id):
-    for i in range(len(user_data)):
-        if user_data[i]['id_user'] == id:
-            del user_data[i]
-            return {"data": ""}, HTTPStatus.NO_CONTENT
-    return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    user = User.query.filter_by(id=id).first()
+    if(not user):
+        return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError as e:
+        return {"error": "Resource could not be deleted","message": str(e)}, HTTPStatus.BAD_REQUEST
+    return {"data": ""}, HTTPStatus.NO_CONTENT

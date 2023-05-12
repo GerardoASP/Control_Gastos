@@ -1,64 +1,83 @@
 from flask import Blueprint, request
 from http import HTTPStatus
+import sqlalchemy.exc
+import werkzeug
+from src.database import db
+from datetime import datetime
+from src.models.income import Income,income_schema,incomes_schema
 
 incomes = Blueprint("incomes",__name__,url_prefix="/api/v1/incomes")
 
-# Data for example purposes
-income_data = [
-    {"id_income": 1, "income_concept": "Papitas", "income_date": "2023-05-07", "income_value": 2000},
-    {"id_income": 2, "income_concept": "Gomitas", "income_date": "2023-05-07", "income_value": 2000},
-    {"id_income": 3, "income_concept": "Frunas", "income_date": "2023-05-07", "income_value": 2000},
-    {"id_income": 4, "income_concept": "Juguito", "income_date": "2023-05-07", "income_value": 2000},
-    {"id_income": 5, "income_concept": "Galletas", "income_date": "2023-05-07", "income_value": 2000},
-];
+
 
 
 @incomes.get("/")
 def read_all():
-    return {"data": income_data}, HTTPStatus.OK
+    incomes = Income.query.order_by(Income.income_value).all()
+    return {"data": incomes_schema.dump(incomes)}, HTTPStatus.OK
 
 @incomes.get("/<int:id>")
 def read_one(id):
-    for income in income_data:
-        if income['id_income'] == id:
-            return {"data": income}, HTTPStatus.OK
-
-    return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    income = Income.query.filter_by(id=id).first()
+    if(not income):
+        return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    return {"data": income_schema.dump(income)}, HTTPStatus.OK
 
 @incomes.post("/")
 def create():
-    post_data = request.get_json()
-
-    income = {
-        "id_income": len(income_data) + 1,
-        "income_concept": post_data.get('income_concept', 'No Income Concept'),
-        "income_date": post_data.get('income_date',None),
-        "income_value": post_data.get('income_value',0)
-    }
-
-    income_data.append(income)
-
-    return {"data": income}, HTTPStatus.CREATED
+    post_data = None
+    try:
+        post_data = request.get_json()
+    except werkzeug.exceptions.BadRequest as e:
+        return {"error": "Post body JSON data not found","message": str(e)}, HTTPStatus.BAD_REQUEST
+    income_date_request = request.get_json().get("income_date", None)
+    income_datee = datetime.strptime(income_date_request, '%Y-%m-%d').date()
+    # Income.id is auto increment!
+    income = Income(income_concept = request.get_json().get("income_concept", None),
+        income_value = request.get_json().get("income_value", None),
+        income_date = income_datee,
+        user_id = request.get_json().get("user_id", None))
+    try:
+        db.session.add(income)
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError as e:
+        return {"error": "Invalid resource values","message": str(e)}, HTTPStatus.BAD_REQUEST
+    return {"data": income_schema.dump(income)}, HTTPStatus.CREATED
 
 @incomes.put('/<int:id>')
 @incomes.patch('/<int:id>')
 def update(id):
-    post_data = request.get_json()
-    for i in range(len(income_data)):
-        if income_data[i]['id_income'] == id:
-            income_data[i] = {
-                "id_income": len(income_data) + 1,
-                "income_concept": post_data.get('income_concept'),
-                "income_date": post_data.get('income_date'),
-                "income_value": post_data.get('income_value')
-            }
-            return {"data": income_data[i]}, HTTPStatus.OK
-    return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    post_data = None
+    try:
+        post_data = request.get_json()
+    except werkzeug.exceptions.BadRequest as e:
+        return {"error": "Post body JSON data not found","message": str(e)}, HTTPStatus.BAD_REQUEST
+    income = Income.query.filter_by(id=id).first()
+    if(not income):
+        return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    income_date_request = request.get_json().get("income_date", None)
+    income_datee = datetime.strptime(income_date_request, '%Y-%m-%d').date()
+    
+    income.income_concept = request.get_json().get('income_concept', income.income_concept)
+    income.income_value = request.get_json().get('income_value', income.income_value)
+    income.income_date = income_datee
+    income.user_id = request.get_json().get('user_id', income.user_id) 
+    
+    try:
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError as e:
+        return {"error": "Invalid resource values","message": str(e)}, HTTPStatus.BAD_REQUEST
+    return {"data": income_schema.dump(income)}, HTTPStatus.OK
 
 @incomes.delete("/<int:id>")
 def delete(id):
-    for i in range(len(income_data)):
-        if income_data[i]['id_income'] == id:
-            del income_data[i]
-            return {"data": ""}, HTTPStatus.NO_CONTENT
-    return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    income = Income.query.filter_by(id=id).first() 
+    if(not income):
+        return {"error": "Resource not found"}, HTTPStatus.NOT_FOUND
+    try:
+        db.session.delete(income)
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError as e:
+        return {"error": "Resource could not be deleted","message": str(e)}, HTTPStatus.BAD_REQUEST
+    return {"data": ""}, HTTPStatus.NO_CONTENT
+
