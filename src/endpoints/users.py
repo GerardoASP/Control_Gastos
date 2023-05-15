@@ -7,14 +7,7 @@ from src.models.user import User, user_schema, users_schema
 
 users = Blueprint("users",__name__,url_prefix="/api/v1/users")
 
-# Data for example purposes
-user_data = [
-    {"id_user": 1, "name_user": "Papitas", "password_user": "1000", "email": "d@gmail.com","name":"fer","balance":0.2},
-    {"id_user": 2, "name_user": "Gomitas", "password_user": "2000", "email": "s@gmail.com","name":"fern","balance":0.3},
-    {"id_user": 3, "name_user": "Frunas", "password_user": "3000", "email": "a@gmail.com","name":"ferna","balance":0.5},
-    {"id_user": 4, "name_user": "Juguito", "password_user": "4000", "email": "ds@hotmail.com","name":"fed","balance":0.7},
-    {"id_user": 5, "name_user": "Galletas", "password_user": "5000", "email": "dsa@hotmail.com","name":"fera","balance":0.9},
-];
+
 
 @users.get("/")
 def read_all():
@@ -41,7 +34,7 @@ def create():
         password_user = request.get_json().get("name_user", None),
         type_document = request.get_json().get("type_document", None),
         balance = request.get_json().get("balance", None))
-    
+
     try:
         db.session.add(user)
         db.session.commit()

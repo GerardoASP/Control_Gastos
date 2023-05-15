@@ -13,7 +13,6 @@ class User(db.Model):
     email = db.Column(db.String(50), unique=True, nullable=False)
     
     
-    type_document = db.Column(db.Enum(TypeDoc),default=TypeDoc.one)
     
     balance = db.Column(db.Float,nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now())
@@ -28,7 +27,7 @@ class User(db.Model):
         return f"User >>> {self.name}"
     
     def __setattr__(self, name, value):
-        if(name == "password"):
+        if(name == "password_user"):
             value = User.hash_password(value)
         super(User, self).__setattr__(name, value)
     
@@ -73,14 +72,6 @@ class User(db.Model):
         
         return value 
     
-    @validates('password_user')
-    def validate_password(self,key,value):
-        if not value:
-            raise AssertionError('No password provided')
-        if len(value) < 5 or len(value) > 20:
-            raise AssertionError('Name user must be between 5 and 20 characters')
-        
-        return value
     
     @validates('email')
     def validate_email(self,key,value):
@@ -93,19 +84,11 @@ class User(db.Model):
         
         return value
     
-    @validates('type_document')
-    def validate_type_document(self,key,value):
-        if not value:
-            raise AssertionError('No type_document provided')
-        if value != "c.c" or value != "t.i" or value != "c.e":
-            raise AssertionError('type_document invalid')
-        
-        return value
     
     @validates('balance')
     def validate_balance(self,key,value):
-        if not value:
-            raise AssertionError('No balance provided')
+        if value < 0 :
+            raise AssertionError('No balance provided and invalidate answer')
         return value
         
 class UserSchema(ma.SQLAlchemyAutoSchema):

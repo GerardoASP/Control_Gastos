@@ -5,6 +5,7 @@ import werkzeug
 from src.database import db
 from datetime import datetime
 from src.models.income import Income,income_schema,incomes_schema
+from flask_jwt_extended import jwt_required
 
 incomes = Blueprint("incomes",__name__,url_prefix="/api/v1/incomes")
 
@@ -12,11 +13,13 @@ incomes = Blueprint("incomes",__name__,url_prefix="/api/v1/incomes")
 
 
 @incomes.get("/")
+@jwt_required()
 def read_all():
     incomes = Income.query.order_by(Income.income_value).all()
     return {"data": incomes_schema.dump(incomes)}, HTTPStatus.OK
 
 @incomes.get("/<int:id>")
+@jwt_required()
 def read_one(id):
     income = Income.query.filter_by(id=id).first()
     if(not income):
@@ -24,6 +27,7 @@ def read_one(id):
     return {"data": income_schema.dump(income)}, HTTPStatus.OK
 
 @incomes.post("/")
+@jwt_required()
 def create():
     post_data = None
     try:
@@ -46,6 +50,7 @@ def create():
 
 @incomes.put('/<int:id>')
 @incomes.patch('/<int:id>')
+@jwt_required()
 def update(id):
     post_data = None
     try:
@@ -70,6 +75,7 @@ def update(id):
     return {"data": income_schema.dump(income)}, HTTPStatus.OK
 
 @incomes.delete("/<int:id>")
+@jwt_required()
 def delete(id):
     income = Income.query.filter_by(id=id).first() 
     if(not income):
