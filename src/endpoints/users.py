@@ -31,8 +31,7 @@ def create():
     # User.id is auto increment! 
     user = User(name_user = request.get_json().get("name_user", None),
         email = request.get_json().get("email", None),
-        password_user = request.get_json().get("name_user", None),
-        type_document = request.get_json().get("type_document", None),
+        password_user = request.get_json().get("password_user", None),
         balance = request.get_json().get("balance", None))
 
     try:

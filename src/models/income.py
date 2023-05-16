@@ -1,13 +1,14 @@
 from datetime import datetime
 from src.database import db,ma
 from sqlalchemy.orm import validates
+
 import re
 class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     income_concept = db.Column(db.String(50), nullable=False, unique=True)
-    income_date = db.Column(db.DateTime,nullable=True)
+    income_date = db.Column(db.Date,nullable=True)
     income_value = db.Column(db.Float,nullable=False)
-    user_id = db.Column(db.String(10),db.ForeignKey('user.id',onupdate="CASCADE",ondelete="RESTRICT"),nullable=False)
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id',onupdate="CASCADE",ondelete="RESTRICT"),nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now())
     updated_at = db.Column(db.DateTime, onupdate=datetime.now())
     
@@ -36,7 +37,8 @@ class Income(db.Model):
             raise AssertionError('No concept provided')
         if len(value) < 5 or len(value) > 50:
             raise AssertionError('Concept must be between 5 and 50 characters')
-        
+        if value.isdigit():
+            raise AssertionError('Income concept invalid')
         return value
     
     @validates('income_value')
@@ -45,7 +47,7 @@ class Income(db.Model):
             raise AssertionError('No value provided')
         if value < 0:
             raise AssertionError('value invalid')
-        
+
         return value
     @validates('income_date')
     def validate_income_date(self,key,value):
@@ -54,6 +56,10 @@ class Income(db.Model):
             raise value
         if not re.match("[0-9]{1,2}\\-[0-9]{1,2}\\-[0-9]{4}", value):
             raise AssertionError('Provided date is not a real date value')
+        today = datetime.datetime.now()
+        income_date = datetime.datetime.strftime(value, "%Y-%m-%d")
+        if not income_date >= today:
+            raise AssertionError('income_date date must be today or later') 
         return value
     @validates('user_id')
     def validate_user_id(self,key,value):
