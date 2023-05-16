@@ -12,13 +12,13 @@ outgoings = Blueprint("outgoings",__name__,url_prefix="/api/v1/outgoings")
 
 
 @outgoings.get("/")
-@jwt_required()
+##@jwt_required()
 def read_all():
     outgoings = Outgoing.query.order_by(Outgoing.outgoing_value).all()
     return {"data": outgoings_schema.dump(outgoings)}, HTTPStatus.OK
 
 @outgoings.get("/<int:id>")
-@jwt_required()
+##@jwt_required()
 def read_one(id):
     outgoing = Outgoing.query.filter_by(id=id).first()
     if(not outgoing):
@@ -26,7 +26,7 @@ def read_one(id):
     return {"data": outgoing_schema.dump(outgoing)}, HTTPStatus.OK
 
 @outgoings.post("/")
-@jwt_required()
+##@jwt_required()
 def create():
     post_data = None
     try:
@@ -36,9 +36,9 @@ def create():
     outgoing_date_request = request.get_json().get("outgoing_date", None)
     outgoing_datee = datetime.strptime(outgoing_date_request, '%Y-%m-%d').date()
     # Outgoing.id is auto increment!
-    outgoing = Outgoing(income_concept = request.get_json().get("Outgoing_concept", None),
+    outgoing = Outgoing(outgoing_concept = request.get_json().get("outgoing_concept", None),
         outgoing_value = request.get_json().get("outgoing_value", None),
-        income_date = outgoing_datee,
+        outgoing_date = outgoing_datee,
         user_id = request.get_json().get("user_id", None))
     try:
         db.session.add(outgoing)
@@ -49,7 +49,7 @@ def create():
 
 @outgoings.put('/<int:id>')
 @outgoings.patch('/<int:id>')
-@jwt_required()
+##@jwt_required()
 def update(id):
     post_data = None
     try:
@@ -74,7 +74,7 @@ def update(id):
     return {"data": outgoing_schema.dump(outgoing)}, HTTPStatus.OK
 
 @outgoings.delete("/<int:id>")
-@jwt_required()
+##@jwt_required()
 def delete(id):
     outgoing = Outgoing.query.filter_by(id=id).first() 
     if(not outgoing):

@@ -13,13 +13,13 @@ incomes = Blueprint("incomes",__name__,url_prefix="/api/v1/incomes")
 
 
 @incomes.get("/")
-@jwt_required()
+##@jwt_required()
 def read_all():
     incomes = Income.query.order_by(Income.income_value).all()
     return {"data": incomes_schema.dump(incomes)}, HTTPStatus.OK
 
 @incomes.get("/<int:id>")
-@jwt_required()
+##@jwt_required()
 def read_one(id):
     income = Income.query.filter_by(id=id).first()
     if(not income):
@@ -27,7 +27,7 @@ def read_one(id):
     return {"data": income_schema.dump(income)}, HTTPStatus.OK
 
 @incomes.post("/")
-@jwt_required()
+##@jwt_required()
 def create():
     post_data = None
     try:
@@ -35,12 +35,12 @@ def create():
     except werkzeug.exceptions.BadRequest as e:
         return {"error": "Post body JSON data not found","message": str(e)}, HTTPStatus.BAD_REQUEST
     income_date_request = request.get_json().get("income_date", None)
-    income_datee = datetime.strptime(income_date_request, '%Y-%m-%d').date()
+    income_date_2 = datetime.strptime(income_date_request, '%Y-%m-%d').date()
     # Income.id is auto increment!
     income = Income(income_concept = request.get_json().get("income_concept", None),
-        income_value = request.get_json().get("income_value", None),
-        income_date = income_datee,
-        user_id = request.get_json().get("user_id", None))
+                    income_date = income_date_2,
+                    income_value = request.get_json().get("income_value", None),
+                    user_id = request.get_json().get("user_id", None))
     try:
         db.session.add(income)
         db.session.commit()
@@ -50,7 +50,7 @@ def create():
 
 @incomes.put('/<int:id>')
 @incomes.patch('/<int:id>')
-@jwt_required()
+##@jwt_required()
 def update(id):
     post_data = None
     try:
@@ -75,7 +75,7 @@ def update(id):
     return {"data": income_schema.dump(income)}, HTTPStatus.OK
 
 @incomes.delete("/<int:id>")
-@jwt_required()
+##@jwt_required()
 def delete(id):
     income = Income.query.filter_by(id=id).first() 
     if(not income):

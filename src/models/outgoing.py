@@ -6,11 +6,11 @@ import re
 class Outgoing(db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     outgoing_concept = db.Column(db.String(50), nullable=False,unique=True)
-    outgoing_date = db.Column(db.DateTime,nullable=True)
+    outgoing_date = db.Column(db.Date,nullable=True)
     outgoing_value = db.Column(db.Float,nullable=False)
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id',onupdate="CASCADE",ondelete="RESTRICT"),nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now())
     updated_at = db.Column(db.DateTime, onupdate=datetime.now())
-    user_id = db.Column(db.String(10),db.ForeignKey('user.id',onupdate="CASCADE",ondelete="RESTRICT"),nullable=False)
     
     def __init__(self, **fields):
         super().__init__(**fields)
@@ -37,7 +37,8 @@ class Outgoing(db.Model):
             raise AssertionError('No concept provided')
         if len(value) < 5 or len(value) > 50:
             raise AssertionError('Concept must be between 5 and 50 characters')
-        
+        if value.isdigit():
+            raise AssertionError('Outgoing concept invalid')
         return value
     
     @validates('outgoing_value')
@@ -55,6 +56,10 @@ class Outgoing(db.Model):
             raise value
         if not re.match("[0-9]{1,2}\\-[0-9]{1,2}\\-[0-9]{4}", value):
             raise AssertionError('Provided date is not a real date value')
+        today = datetime.datetime.now()
+        outgoing_date = datetime.datetime.strftime(value, "%Y-%m-%d")
+        if not outgoing_date >= today:
+            raise AssertionError('outgoing_date date must be today or later') 
         return value
     @validates('user_id')
     def validate_user_id(self,key,value):

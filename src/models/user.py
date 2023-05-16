@@ -42,7 +42,7 @@ class User(db.Model):
         if not password_user:
             raise AssertionError('Password not provided')
         if not re.match('\d.*[A-Z]|[A-Z].*\d', password_user):
-            raise AssertionError('Password must contain 1 capital letter and 1number')
+            raise AssertionError('Password must contain 1 capital letter and 1 number')
         if len(password_user) < 7 or len(password_user) > 20:
             raise AssertionError('Password must be between 7 and 20 characters')
         
@@ -69,7 +69,7 @@ class User(db.Model):
             raise AssertionError('Name value must be alphanumeric')
         if len(value) < 5 or len(value) > 50:
             raise AssertionError('Name user must be between 5 and 50 characters')
-        
+
         return value 
     
     
